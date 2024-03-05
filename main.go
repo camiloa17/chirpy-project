@@ -40,9 +40,11 @@ func main() {
 		r.Get("/healthz", healthHandler)
 		r.Get("/reset", apiConfig.metricsResetHandler)
 		r.Get("/chirps", apiConfig.getChirpsHandler)
+		r.Get("/chirps/{chirpID}", apiConfig.getAChirpHandler)
 		r.Group(func(r chi.Router) {
 			// r.Use(middleware.AllowContentType("application/json"))
 			r.Post("/chirps", apiConfig.addChirpsHandler)
+			r.Post("/users", apiConfig.createUserHandler)
 		})
 
 	})
@@ -95,7 +97,9 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload any) {
 	if err != nil {
 		log.Printf("error marshalling JSON: %s\n", err)
 	}
-	w.WriteHeader(statusCode)
+	if statusCode != 200 {
+		w.WriteHeader(statusCode)
+	}
 	w.Write(dat)
 }
 

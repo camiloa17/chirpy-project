@@ -32,9 +32,9 @@ func NewDB(dbPath string) repository.DatabaseRepository {
 // ensureDB creates a new database file if it doesn't exist
 func (db *DB) ensureDB() error {
 	data, err := os.ReadFile(db.path)
-	chirps := models.Chirps{Chirps: make(map[int]models.Chirp)}
+	database := models.DBStructure{Chirps: make(map[int]models.Chirp), Users: make(map[int]models.User)}
 	if errors.Is(err, os.ErrNotExist) {
-		err := db.writeDB(chirps)
+		err := db.writeDB(database)
 		if err != nil {
 			return err
 		}
@@ -43,14 +43,14 @@ func (db *DB) ensureDB() error {
 		return err
 	}
 	if len(data) == 0 {
-		db.writeDB(chirps)
+		db.writeDB(database)
 	}
 	return nil
 }
 
 // loadDB reads the database file into memory
-func (db *DB) loadDB() (models.Chirps, error) {
-	chirps := models.Chirps{Chirps: make(map[int]models.Chirp)}
+func (db *DB) loadDB() (models.DBStructure, error) {
+	database := models.DBStructure{Chirps: make(map[int]models.Chirp), Users: make(map[int]models.User)}
 	db.mux.RLock()
 	defer db.mux.RUnlock()
 
@@ -58,24 +58,24 @@ func (db *DB) loadDB() (models.Chirps, error) {
 	if err != nil || len(data) == 0 {
 		err := db.ensureDB()
 		if err != nil {
-			return chirps, err
+			return database, err
 		}
 		data, err = os.ReadFile(db.path)
 		if err != nil {
-			return chirps, err
+			return database, err
 		}
 	}
 
-	err = json.Unmarshal(data, &chirps)
+	err = json.Unmarshal(data, &database)
 	if err != nil {
 		fmt.Println(err)
-		return chirps, err
+		return database, err
 	}
-	return chirps, nil
+	return database, nil
 }
 
 // writeDB writes the database file to disk
-func (db *DB) writeDB(dbStructure models.Chirps) error {
+func (db *DB) writeDB(dbStructure models.DBStructure) error {
 	val, err := json.Marshal(dbStructure)
 	if err != nil {
 		return err

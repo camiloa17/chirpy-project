@@ -1,19 +1,34 @@
 package database
 
 import (
+	"errors"
 	"sort"
 
 	"github.com/camiloa17/chirpy-project/internal/models"
 )
 
+// GetChirp return a chirp from the database
+func (db *DB) GetChirp(id int) (models.Chirp, error) {
+	database, err := db.loadDB()
+	if err != nil {
+		return models.Chirp{}, err
+	}
+	chirp, ok := database.Chirps[id]
+	if !ok {
+		return models.Chirp{}, errors.New("no chirp found")
+	}
+	return chirp, nil
+
+}
+
 // GetChirps returns all chirps in the database
 func (db *DB) GetChirps() ([]models.Chirp, error) {
-	dbChirps, err := db.loadDB()
+	database, err := db.loadDB()
 	if err != nil {
 		return []models.Chirp{}, err
 	}
 	chirps := []models.Chirp{}
-	for _, chirp := range dbChirps.Chirps {
+	for _, chirp := range database.Chirps {
 		chirps = append(chirps, chirp)
 	}
 	sort.Slice(chirps, func(a, b int) bool {
@@ -25,18 +40,18 @@ func (db *DB) GetChirps() ([]models.Chirp, error) {
 
 // CreateChirp creates a new chirp and saves it to disk
 func (db *DB) CreateChirp(body string) (models.Chirp, error) {
-	chirps, err := db.loadDB()
+	database, err := db.loadDB()
 	if err != nil {
 		return models.Chirp{}, err
 	}
-	newId := len(chirps.Chirps) + 1
+	newId := len(database.Chirps) + 1
 
 	chirp := models.Chirp{
 		ID:   newId,
 		Body: body,
 	}
-	chirps.Chirps[chirp.ID] = chirp
-	err = db.writeDB(chirps)
+	database.Chirps[chirp.ID] = chirp
+	err = db.writeDB(database)
 	if err != nil {
 		return models.Chirp{}, err
 	}
