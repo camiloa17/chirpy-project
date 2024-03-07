@@ -13,15 +13,19 @@ import (
 	"github.com/camiloa17/chirpy-project/internal/repository/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/joho/godotenv"
 )
 
 type apiConfig struct {
 	fileserverHit int
 	DBRepo        repository.DatabaseRepository
+	JwtSecret     string
 }
 
 func main() {
 	const port = "8080"
+	godotenv.Load()
+
 	workDir, err := os.Getwd()
 	if err != nil {
 		log.Panicln(err)
@@ -31,7 +35,9 @@ func main() {
 	apiConfig := apiConfig{
 		fileserverHit: 0,
 		DBRepo:        db,
+		JwtSecret:     os.Getenv("JWT_SECRET"),
 	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.StripSlashes)
@@ -45,6 +51,8 @@ func main() {
 			// r.Use(middleware.AllowContentType("application/json"))
 			r.Post("/chirps", apiConfig.addChirpsHandler)
 			r.Post("/users", apiConfig.createUserHandler)
+			r.Put("/users", apiConfig.updateUserHandler)
+			r.Post("/login", apiConfig.loginUserHandler)
 		})
 
 	})
@@ -101,16 +109,4 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload any) {
 		w.WriteHeader(statusCode)
 	}
 	w.Write(dat)
-}
-
-func hideNegativeWords(text string, negativeWords map[string]struct{}) string {
-	bodyWords := strings.Fields(text)
-	for idx, word := range bodyWords {
-		lowerCase := strings.ToLower(word)
-		_, ok := negativeWords[lowerCase]
-		if ok {
-			bodyWords[idx] = "****"
-		}
-	}
-	return strings.Join(bodyWords, " ")
 }

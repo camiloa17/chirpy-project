@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -66,4 +67,16 @@ func (cfg *apiConfig) addChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondWithJSON(w, http.StatusCreated, chirp)
+}
+
+func hideNegativeWords(text string, negativeWords map[string]struct{}) string {
+	bodyWords := strings.Fields(text)
+	for idx, word := range bodyWords {
+		lowerCase := strings.ToLower(word)
+		_, ok := negativeWords[lowerCase]
+		if ok {
+			bodyWords[idx] = "****"
+		}
+	}
+	return strings.Join(bodyWords, " ")
 }

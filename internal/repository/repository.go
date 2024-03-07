@@ -12,5 +12,9 @@ type DatabaseRepository interface {
 	// GetChirp returns a Chirp by an id.
 	GetChirp(id int) (models.Chirp, error)
 	// CreateUser creates a new user
-	CreateUser(userEmail string) (models.User, error)
+	CreateUser(userEmail, password string) (models.User, error)
+	// GetUserByEmail finds a user by its email
+	GetUserByEmail(userEmail string) (models.User, error)
+	// UpdateUser updates the user information
+	UpdateUser(user models.User) (models.User, error)
 }
