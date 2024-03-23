@@ -53,6 +53,8 @@ func main() {
 			r.Post("/users", apiConfig.createUserHandler)
 			r.Put("/users", apiConfig.updateUserHandler)
 			r.Post("/login", apiConfig.loginUserHandler)
+			r.Post("/refresh", apiConfig.refreshTokenHandler)
+			r.Post("/revoke", apiConfig.revokeRefreshToken)
 		})
 
 	})

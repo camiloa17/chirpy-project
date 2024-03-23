@@ -25,17 +25,24 @@ func ValidatePassword(password, hash string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
-// GenerateJWTToken
-func GenerateJWTToken(userId int, expiresInSeconds int, hash string) (string, error) {
-	expiresInHours := time.Duration(24 * time.Hour)
-	expiresIn := time.Duration(24 * time.Hour)
+var issuerMap = map[string]string{
+	"access":  "chirpy-access",
+	"refresh": "chirpy-refresh",
+}
 
-	if expiresInSeconds != 0 && expiresInSeconds < int(expiresInHours.Seconds()) {
-		expiresIn = time.Duration(expiresInSeconds) * time.Second
+// GenerateJWTToken it generates a "access" or "refresh" token type
+func GenerateJWTToken(userId int, tokeType, hash string) (string, error) {
+	issuer, ok := issuerMap[tokeType]
+	if !ok {
+		return "", errors.New("wrong token type")
+	}
+	expiresIn := time.Duration(1 * time.Hour)
+	if issuer == issuerMap["refresh"] {
+		expiresIn = time.Duration(60 * 24 * time.Hour)
 	}
 
 	claim := jwt.RegisteredClaims{
-		Issuer:    "chirpy",
+		Issuer:    issuer,
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
 		Subject:   fmt.Sprint(userId),
@@ -50,14 +57,30 @@ func GenerateJWTToken(userId int, expiresInSeconds int, hash string) (string, er
 	return signedToken, nil
 }
 
-// ValidateToken
-func ValidateToken(token, hash string) (string, error) {
+// ValidateToken it validates a "access" or "refresh" token type
+func ValidateToken(token, tokeType, hash string) (string, error) {
+	issuerForToken, ok := issuerMap[tokeType]
+
+	if !ok {
+		return "", errors.New("wrong token type")
+	}
+
 	claim := jwt.RegisteredClaims{}
 	validToken, err := jwt.ParseWithClaims(token, &claim, func(t *jwt.Token) (any, error) {
 		return []byte(hash), nil
 	})
+
 	if err != nil {
 		return "", err
+	}
+
+	tokenIssuer, err := validToken.Claims.GetIssuer()
+	if err != nil {
+		return "", err
+	}
+
+	if tokenIssuer != issuerForToken {
+		return "", errors.New("issuer is not correct")
 	}
 
 	strUserId, err := validToken.Claims.GetSubject()

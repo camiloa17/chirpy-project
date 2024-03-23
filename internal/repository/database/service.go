@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/camiloa17/chirpy-project/internal/models"
 	"github.com/camiloa17/chirpy-project/internal/repository"
@@ -32,7 +33,7 @@ func NewDB(dbPath string) repository.DatabaseRepository {
 // ensureDB creates a new database file if it doesn't exist
 func (db *DB) ensureDB() error {
 	data, err := os.ReadFile(db.path)
-	database := models.DBStructure{Chirps: make(map[int]models.Chirp), Users: make(map[int]models.User)}
+	database := models.DBStructure{Chirps: make(map[int]models.Chirp), Users: make(map[int]models.User), RevokedTokens: make(map[string]time.Time)}
 	if errors.Is(err, os.ErrNotExist) {
 		err := db.writeDB(database)
 		if err != nil {
@@ -50,7 +51,7 @@ func (db *DB) ensureDB() error {
 
 // loadDB reads the database file into memory
 func (db *DB) loadDB() (models.DBStructure, error) {
-	database := models.DBStructure{Chirps: make(map[int]models.Chirp), Users: make(map[int]models.User)}
+	database := models.DBStructure{Chirps: make(map[int]models.Chirp), Users: make(map[int]models.User), RevokedTokens: make(map[string]time.Time)}
 	db.mux.RLock()
 	defer db.mux.RUnlock()
 

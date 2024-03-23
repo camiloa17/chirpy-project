@@ -80,7 +80,7 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 		respondWithError(w, http.StatusUnauthorized, err.Error())
 	}
 
-	strUserId, err := authentication.ValidateToken(cleanToken, cfg.JwtSecret)
+	strUserId, err := authentication.ValidateToken(cleanToken, "access", cfg.JwtSecret)
 
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "not authorized")
@@ -131,60 +131,4 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	respondWithJSON(w, http.StatusOK, userResponse{Email: user.Email, ID: user.ID})
-}
-
-// loginUserHandler handles user login authentication
-func (cfg *apiConfig) loginUserHandler(w http.ResponseWriter, r *http.Request) {
-	type userPayload struct {
-		Email            string `json:"email"`
-		Password         string `json:"password"`
-		ExpiresInSeconds int    `json:"expires_in_seconds,omitempty"`
-	}
-	type userResponse struct {
-		Email string `json:"email"`
-		ID    int    `json:"id"`
-		Token string `json:"token"`
-	}
-	w.Header().Set("Content-Type", "application/json")
-	userPl := userPayload{}
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&userPl)
-
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not decode payload")
-		return
-	}
-
-	_, err = mail.ParseAddress(userPl.Email)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if len(userPl.Password) == 0 {
-		respondWithError(w, http.StatusBadRequest, "no password sent")
-		return
-	}
-
-	user, err := cfg.DBRepo.GetUserByEmail(strings.ToLower(userPl.Email))
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	err = authentication.ValidatePassword(userPl.Password, user.Password)
-
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	token, err := authentication.GenerateJWTToken(user.ID, userPl.ExpiresInSeconds, cfg.JwtSecret)
-
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	respondWithJSON(w, 200, userResponse{Email: user.Email, ID: user.ID, Token: token})
-
 }

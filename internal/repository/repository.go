@@ -17,4 +17,8 @@ type DatabaseRepository interface {
 	GetUserByEmail(userEmail string) (models.User, error)
 	// UpdateUser updates the user information
 	UpdateUser(user models.User) (models.User, error)
+	// FindRevokedRefreshToken
+	FindRevokedRefreshToken(refreshToken string) error
+	// RevokeRefreshToken
+	RevokeRefreshToken(refreshToken string) error
 }
