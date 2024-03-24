@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/camiloa17/chirpy-project/internal/authentication"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -33,13 +34,31 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) addChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	cleanToken, err := authentication.GetAuthToken(token, "Bearer")
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	strUserId, err := authentication.ValidateToken(cleanToken, "access", cfg.JwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	userId, err := strconv.Atoi(strUserId)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	type body struct {
 		Body string `json:"body"`
 	}
 	w.Header().Set("Content-Type", "application/json")
 	message := body{}
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&message)
+	err = decoder.Decode(&message)
+
+	defer r.Body.Close()
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not decode message")
@@ -59,7 +78,7 @@ func (cfg *apiConfig) addChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	cleanMessage := hideNegativeWords(message.Body, badWords)
 
-	chirp, err := cfg.DBRepo.CreateChirp(cleanMessage)
+	chirp, err := cfg.DBRepo.CreateChirp(cleanMessage, userId)
 
 	if err != nil {
 		fmt.Printf("error saving chirp, %v", err)
@@ -67,6 +86,49 @@ func (cfg *apiConfig) addChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondWithJSON(w, http.StatusCreated, chirp)
+}
+
+func (cfg *apiConfig) deleteChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	cleanToken, err := authentication.GetAuthToken(token, "Bearer")
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	strUserId, err := authentication.ValidateToken(cleanToken, "access", cfg.JwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	userId, err := strconv.Atoi(strUserId)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	chirpID, err := strconv.Atoi(chi.URLParam(r, "chirpID"))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	chirp, err := cfg.DBRepo.GetChirp(chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if chirp.AuthorID != userId {
+		respondWithError(w, http.StatusForbidden, "")
+		return
+	}
+
+	err = cfg.DBRepo.DeleteChirp(chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, "")
 }
 
 func hideNegativeWords(text string, negativeWords map[string]struct{}) string {

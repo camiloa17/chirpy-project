@@ -39,7 +39,7 @@ func (db *DB) GetChirps() ([]models.Chirp, error) {
 }
 
 // CreateChirp creates a new chirp and saves it to disk
-func (db *DB) CreateChirp(body string) (models.Chirp, error) {
+func (db *DB) CreateChirp(body string, authorID int) (models.Chirp, error) {
 	database, err := db.loadDB()
 	if err != nil {
 		return models.Chirp{}, err
@@ -47,8 +47,9 @@ func (db *DB) CreateChirp(body string) (models.Chirp, error) {
 	newId := len(database.Chirps) + 1
 
 	chirp := models.Chirp{
-		ID:   newId,
-		Body: body,
+		ID:       newId,
+		Body:     body,
+		AuthorID: authorID,
 	}
 	database.Chirps[chirp.ID] = chirp
 	err = db.writeDB(database)
@@ -57,4 +58,17 @@ func (db *DB) CreateChirp(body string) (models.Chirp, error) {
 	}
 
 	return chirp, nil
+}
+
+func (db *DB) DeleteChirp(id int) error {
+	database, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+	chirp, ok := database.Chirps[id]
+	if !ok {
+		return errors.New("no chirp found")
+	}
+	delete(database.Chirps, chirp.ID)
+	return nil
 }

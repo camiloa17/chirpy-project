@@ -21,6 +21,7 @@ func (cfg *apiConfig) loginUserHandler(w http.ResponseWriter, r *http.Request) {
 		ID           int    `json:"id"`
 		Token        string `json:"token"`
 		RefreshToken string `json:"refresh_token"`
+		IsChirpyRed  bool   `json:"is_chirpy_red"`
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -68,7 +69,7 @@ func (cfg *apiConfig) loginUserHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJSON(w, 200, userResponse{Email: user.Email, ID: user.ID, Token: token, RefreshToken: rToken})
+	respondWithJSON(w, 200, userResponse{Email: user.Email, ID: user.ID, Token: token, RefreshToken: rToken, IsChirpyRed: user.IsChirpyRed})
 
 }
 
@@ -78,7 +79,7 @@ func (cfg *apiConfig) refreshTokenHandler(w http.ResponseWriter, r *http.Request
 		Token string `json:"token"`
 	}
 	token := r.Header.Get("Authorization")
-	cleanToken, err := authentication.GetBearerToken(token)
+	cleanToken, err := authentication.GetAuthToken(token, "Bearer")
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, err.Error())
 		return
@@ -112,7 +113,7 @@ func (cfg *apiConfig) refreshTokenHandler(w http.ResponseWriter, r *http.Request
 // revokeRefreshToken
 func (cfg *apiConfig) revokeRefreshToken(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
-	cleanToken, err := authentication.GetBearerToken(token)
+	cleanToken, err := authentication.GetAuthToken(token, "Bearer")
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, err.Error())
 		return

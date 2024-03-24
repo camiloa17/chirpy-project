@@ -12,8 +12,9 @@ import (
 )
 
 type userResponse struct {
-	Email string `json:"email"`
-	ID    int    `json:"id"`
+	Email       string `json:"email"`
+	ID          int    `json:"id"`
+	IsChirpyRed bool   `json:"is_chirpy_red"`
 }
 
 // createUserHandler handles the user creation request
@@ -61,7 +62,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, userResponse{Email: newUser.Email, ID: newUser.ID})
+	respondWithJSON(w, http.StatusCreated, userResponse{Email: newUser.Email, ID: newUser.ID, IsChirpyRed: newUser.IsChirpyRed})
 
 }
 
@@ -74,7 +75,7 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	token := r.Header.Get("Authorization")
-	cleanToken, err := authentication.GetBearerToken(token)
+	cleanToken, err := authentication.GetAuthToken(token, "Bearer")
 
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, err.Error())
@@ -88,6 +89,12 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	userId, err := strconv.Atoi(strUserId)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	user, err := cfg.DBRepo.GetUserByID(userId)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -119,16 +126,17 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	userUpdate := models.User{
-		ID:       userId,
-		Password: hashedPass,
-		Email:    userPl.Email,
+		ID:          userId,
+		Password:    hashedPass,
+		Email:       userPl.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 
-	user, err := cfg.DBRepo.UpdateUser(userUpdate)
+	uUser, err := cfg.DBRepo.UpdateUser(userUpdate)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, userResponse{Email: user.Email, ID: user.ID})
+	respondWithJSON(w, http.StatusOK, userResponse{Email: uUser.Email, ID: uUser.ID, IsChirpyRed: uUser.IsChirpyRed})
 }

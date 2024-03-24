@@ -26,9 +26,10 @@ func (db *DB) CreateUser(userEmail string, password string) (models.User, error)
 	newId := len(database.Users) + 1
 
 	user := models.User{
-		ID:       newId,
-		Email:    userEmail,
-		Password: password,
+		ID:          newId,
+		Email:       userEmail,
+		Password:    password,
+		IsChirpyRed: false,
 	}
 	database.Users[newId] = user
 	err = db.writeDB(database)
@@ -61,13 +62,36 @@ func (db *DB) GetUserByEmail(userEmail string) (models.User, error) {
 	return foundUser, nil
 }
 
+// GetUserByEmail finds a user by its email
+func (db *DB) GetUserByID(userID int) (models.User, error) {
+	database, err := db.loadDB()
+	if err != nil {
+		return models.User{}, err
+	}
+	foundUser := models.User{}
+	found := false
+	for _, user := range database.Users {
+		if user.ID == userID {
+			foundUser = user
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return foundUser, errors.New("no user found")
+	}
+
+	return foundUser, nil
+}
+
+// UpdateUser updates the user with the passed params
 func (db *DB) UpdateUser(user models.User) (models.User, error) {
 	database, err := db.loadDB()
 	if err != nil {
 		return models.User{}, err
 	}
 	userExist := false
-
 	for _, savedUser := range database.Users {
 		if savedUser.Email == user.Email && savedUser.ID != user.ID {
 			userExist = true
@@ -76,7 +100,7 @@ func (db *DB) UpdateUser(user models.User) (models.User, error) {
 	}
 
 	if userExist {
-		return models.User{}, errors.New("email already in use")
+		return models.User{}, errors.New("user exist with different id")
 	}
 	database.Users[user.ID] = user
 	err = db.writeDB(database)

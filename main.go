@@ -47,6 +47,7 @@ func main() {
 		r.Get("/reset", apiConfig.metricsResetHandler)
 		r.Get("/chirps", apiConfig.getChirpsHandler)
 		r.Get("/chirps/{chirpID}", apiConfig.getAChirpHandler)
+		r.Delete("/chirps/{chirpID}", apiConfig.deleteChirpsHandler)
 		r.Group(func(r chi.Router) {
 			// r.Use(middleware.AllowContentType("application/json"))
 			r.Post("/chirps", apiConfig.addChirpsHandler)
@@ -55,6 +56,7 @@ func main() {
 			r.Post("/login", apiConfig.loginUserHandler)
 			r.Post("/refresh", apiConfig.refreshTokenHandler)
 			r.Post("/revoke", apiConfig.revokeRefreshToken)
+			r.Post("/polka/webhooks", apiConfig.polkaPaymentEventHandler)
 		})
 
 	})

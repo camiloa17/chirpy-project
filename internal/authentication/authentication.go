@@ -92,12 +92,11 @@ func ValidateToken(token, tokeType, hash string) (string, error) {
 	return strUserId, nil
 }
 
-// GetBearerToken gets the auth token from the Authorization header
-func GetBearerToken(headerToken string) (string, error) {
-	tokenPrefix := "Bearer"
+// GetAuthToken gets the auth token from the Authorization header example "Bearer"
+func GetAuthToken(headerToken string, tokenPrefix string) (string, error) {
 	cleanBearerToken, hasPrefix := strings.CutPrefix(headerToken, tokenPrefix)
 	if !hasPrefix {
-		return "", errors.New("no Bearer token provides")
+		return "", errors.New("no token token provides")
 	}
 	return strings.TrimSpace(cleanBearerToken), nil
 }
