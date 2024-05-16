@@ -2,7 +2,6 @@ package database
 
 import (
 	"errors"
-	"sort"
 
 	"github.com/camiloa17/chirpy-project/internal/models"
 )
@@ -31,11 +30,23 @@ func (db *DB) GetChirps() ([]models.Chirp, error) {
 	for _, chirp := range database.Chirps {
 		chirps = append(chirps, chirp)
 	}
-	sort.Slice(chirps, func(a, b int) bool {
-		return chirps[a].ID < chirps[b].ID
-	})
 	return chirps, nil
 
+}
+
+// GetChirpsByAuthorID return chirps by the author id.
+func (db *DB) GetChirpsByAuthorID(authorID int) ([]models.Chirp, error) {
+	database, err := db.loadDB()
+	if err != nil {
+		return []models.Chirp{}, err
+	}
+	chirps := []models.Chirp{}
+	for _, chirp := range database.Chirps {
+		if chirp.AuthorID == authorID {
+			chirps = append(chirps, chirp)
+		}
+	}
+	return chirps, nil
 }
 
 // CreateChirp creates a new chirp and saves it to disk

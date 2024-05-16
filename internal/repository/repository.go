@@ -9,6 +9,8 @@ type DatabaseRepository interface {
 	CreateChirp(body string, authorID int) (models.Chirp, error)
 	// GetChirps returns all chirps in the database
 	GetChirps() ([]models.Chirp, error)
+	// GetChirpsByAuthorID get all chirps by AuthorID
+	GetChirpsByAuthorID(authorID int) ([]models.Chirp, error)
 	// GetChirp returns a Chirp by an id.
 	GetChirp(id int) (models.Chirp, error)
 	// DeleteChirp deletes a chirp by id

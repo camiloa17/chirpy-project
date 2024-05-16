@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/camiloa17/chirpy-project/internal/authentication"
+	"github.com/camiloa17/chirpy-project/internal/models"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -26,10 +28,40 @@ func (cfg *apiConfig) getAChirpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.DBRepo.GetChirps()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Fail to read the chirps")
+	authorID := r.URL.Query().Get("author_id")
+	var chirps []models.Chirp
+
+	if len(authorID) > 0 {
+		id, err := strconv.Atoi(authorID)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		dbChirps, err := cfg.DBRepo.GetChirpsByAuthorID(id)
+
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		chirps = dbChirps
+
+	} else {
+		dbChirps, err := cfg.DBRepo.GetChirps()
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		chirps = dbChirps
 	}
+	sortOrder := r.URL.Query().Get("sort")
+
+	sort.Slice(chirps, func(a, b int) bool {
+		if sortOrder == "desc" {
+			return chirps[a].ID > chirps[b].ID
+		}
+		return chirps[a].ID < chirps[b].ID
+	})
 	respondWithJSON(w, http.StatusOK, chirps)
 }
 
